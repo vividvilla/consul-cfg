@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"io"
@@ -167,19 +168,19 @@ func mapToKVPairs(ckv *[]consulKVPair, prefix string, inp map[string]interface{}
 		} else {
 			// If its not  string then encode it using JSON
 			// CAVEAT: TOML supports array of maps but consul KV doesn't support this so it will be JSON marshalled.
-			var val string
-			if vKind == reflect.String {
-				val = v.(string)
-			} else {
-				vJSON, err := json.Marshal(v)
-				if err != nil {
-					errLog.Fatalf("error while marshalling value: %v err: %v", v, err)
-				}
-				val = string(vJSON)
+
+			// Custom JSON marshaller with safe escaped html is disabled.
+			// Default JSON marshaller escapes &, > and <
+			buffer := bytes.NewBufferString("")
+			jEncoder := json.NewEncoder(buffer)
+			jEncoder.SetEscapeHTML(false)
+
+			if err := jEncoder.Encode(v); err != nil {
+				errLog.Fatalf("error while marshalling value: %v err: %v", v, err)
 			}
 
 			// Consul exports values as base64 encoded
-			b64Encoded := base64.StdEncoding.EncodeToString([]byte(val))
+			b64Encoded := base64.StdEncoding.EncodeToString(buffer.Bytes())
 
 			*ckv = append(*ckv, consulKVPair{
 				Flags: 0,
