@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"log"
@@ -177,10 +178,13 @@ func mapToKVPairs(ckv *[]consulKVPair, prefix string, inp map[string]interface{}
 				val = string(vJSON)
 			}
 
+			// Consul exports values as base64 encoded
+			b64Encoded := base64.StdEncoding.EncodeToString([]byte(val))
+
 			*ckv = append(*ckv, consulKVPair{
 				Flags: 0,
 				Key:   newPrefix,
-				Value: val,
+				Value: b64Encoded,
 			})
 		}
 	}
