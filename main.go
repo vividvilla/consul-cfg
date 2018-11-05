@@ -35,12 +35,12 @@ var (
 	kvInputType        string
 	kvKeyPrefix        string
 	kvAvailableFormats = []string{"toml", "yaml", "hcl", "json", "props"}
+
+	sysLog = log.New(os.Stdout, "", log.LUTC)
+	errLog = log.New(os.Stderr, "", log.LUTC)
 )
 
 func main() {
-	// Set logs and don't show the time
-	log.SetFlags(log.LUTC)
-
 	// Configure CLI
 	var rootCmd = &cobra.Command{
 		Use:   "consul-cfg [sub]",
@@ -67,13 +67,13 @@ func main() {
 
 	// Execute cli
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		errLog.Fatal(err)
 	}
 }
 
 func runKVCmd(cmd *cobra.Command, args []string) {
 	if !isValidKVInputFormat(kvInputType) {
-		log.Fatalf("Invalid input file format - %s. Available options are `toml`, `yaml`, `hcl`, `json` and `props` (JAVA properties)", kvInputType)
+		errLog.Fatalf("Invalid input file format - %s. Available options are `toml`, `yaml`, `hcl`, `json` and `props` (JAVA properties)", kvInputType)
 	}
 
 	// Collect all inputs
@@ -88,7 +88,7 @@ func runKVCmd(cmd *cobra.Command, args []string) {
 		for _, fname := range args {
 			f, err := os.Open(fname)
 			if err != nil {
-				log.Fatalf("Error: error opening input file - %v", err)
+				errLog.Fatalf("Error: error opening input file - %v", err)
 			}
 
 			inputs = append(inputs, f)
@@ -101,7 +101,7 @@ func runKVCmd(cmd *cobra.Command, args []string) {
 
 		// m, err := tomlToMap(i)
 		if err != nil {
-			log.Fatalf("Error: error parsing input - %v", err)
+			errLog.Fatalf("Error: error parsing input - %v", err)
 		}
 
 		mapToKVPairs(&output, kvKeyPrefix, m)
@@ -126,10 +126,10 @@ func isValidKVInputFormat(format string) bool {
 func printKVPairsJSON(inp interface{}) {
 	bytes, err := json.MarshalIndent(inp, "", "  ")
 	if err != nil {
-		log.Fatalf("error marshelling output: %v", err)
+		errLog.Fatalf("error marshelling output: %v", err)
 	}
 
-	log.Println(string(bytes[:]))
+	sysLog.Println(string(bytes[:]))
 }
 
 // Parse config file to a map
@@ -159,7 +159,7 @@ func mapToKVPairs(ckv *[]consulKVPair, prefix string, inp map[string]interface{}
 		if vKind == reflect.Map {
 			m, ok := v.(map[string]interface{})
 			if !ok {
-				log.Fatalf("not ok: %v - %v\n", k, v)
+				errLog.Fatalf("not ok: %v - %v\n", k, v)
 			}
 
 			mapToKVPairs(ckv, newPrefix, m)
@@ -172,7 +172,7 @@ func mapToKVPairs(ckv *[]consulKVPair, prefix string, inp map[string]interface{}
 			} else {
 				vJSON, err := json.Marshal(v)
 				if err != nil {
-					log.Fatalf("error while marshalling value: %v err: %v", v, err)
+					errLog.Fatalf("error while marshalling value: %v err: %v", v, err)
 				}
 				val = string(vJSON)
 			}
