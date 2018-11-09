@@ -6,6 +6,9 @@
 
 ## Get started
 
+### Config to KV Pairs
+Export config file to Consul KV Pairs format which can be used for [Consul bulk import](https://www.consul.io/docs/commands/kv/import.html).
+
 ```bash
 # Read config from multiple files
 consul-cfg kv --type toml config1.toml config2.toml
@@ -15,6 +18,20 @@ cat config.toml | consul-cfg kv --type toml
 
 # Specify prefix for all keys
 cat config.toml | consul-cfg kv --type toml --prefix myconfig/app
+```
+
+### Config to consul-template
+Convert config file to consul-template (go template). Config values replaced with consul-template [`keyOrUpdate`](https://github.com/hashicorp/consul-template#keyordefault) syntax with default value as current value.
+
+```bash
+# Read config from multiple files
+consul-cfg tmpl --type toml config1.toml config2.toml
+
+# Pipe stdin from other commands
+cat config.toml | consul-cfg tmpl --type toml
+
+# Specify prefix for all keys
+cat config.toml | consul-cfg tmpl --type toml --prefix myconfig/app
 ```
 
 ## Supported formats
@@ -28,7 +45,7 @@ go install github.com/vividvilla/consul-cfg
 ```
 
 ### Install binary
-You can download latest binary from [release page](/releases) based on your OS.
+You can download latest binary from [releases](https://github.com/vividvilla/consul-cfg/releases/latest) based on your OS.
 
 ## Caveat
 Array of maps are not supported by consul KV so it will be encoded as JSON string.
